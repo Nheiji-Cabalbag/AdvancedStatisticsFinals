@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ADVSTAT Workbench</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <section id="start" class="start" aria-label="Welcome">
+    <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i>
+    <div class="start-inner">
+      <svg class="bell" viewBox="0 0 400 120" aria-hidden="true">
+        <defs><linearGradient id="bg" x1="0" x2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset=".5" stop-color="#fff"/><stop offset="1" stop-color="#f9a8d4"/></linearGradient></defs>
+        <path class="bell-path" d="M0 112 C 80 112, 120 108, 160 70 S 185 8, 200 8 S 240 40, 280 80 S 330 112, 400 112" fill="none" stroke="url(#bg)" stroke-width="4" stroke-linecap="round"/>
+        <circle class="dot d1" cx="120" cy="96" r="5"/><circle class="dot d2" cx="165" cy="60" r="5"/><circle class="dot d3" cx="215" cy="30" r="5"/><circle class="dot d4" cx="260" cy="66" r="5"/><circle class="dot d5" cx="305" cy="98" r="5"/>
+      </svg>
+      <p class="school">Faith Colleges · College of Communication and Information Technology</p>
+      <h1>ADVSTAT Workbench</h1>
+      <p class="lead">Simple linear regression and Z hypothesis testing, with live results and charts.</p>
+      <div class="chips"><span>Regression equation and r</span><span>Scatter diagram</span><span>Z test and decision</span><span>Normal curve</span></div>
+      <button id="start-btn" class="primary big-btn" type="button">Start</button>
+      <p class="press">or press Enter</p>
+    </div>
+  </section>
+  <section id="auth" class="start auth" hidden aria-label="Account">
+    <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i>
+    <div class="auth-card">
+      <h2 id="auth-title">Welcome back</h2>
+      <p class="hint" id="auth-sub">Log in to open the workbench.</p>
+      <div class="auth-tabs" role="tablist">
+        <button type="button" id="at-login" role="tab" aria-selected="true">Log in</button>
+        <button type="button" id="at-reg" role="tab" aria-selected="false">Register</button>
+        <span class="ink" id="auth-ink"></span>
+      </div>
+
+      <form id="login-form" novalidate>
+        <label for="li-email">Email</label>
+        <input id="li-email" type="email" autocomplete="email" required />
+        <label for="li-pw">Password</label>
+        <input id="li-pw" type="password" autocomplete="current-password" required />
+        <label class="check"><input type="checkbox" data-show="login-form" /> Show password</label>
+        <button type="submit" class="primary wide">Log in</button>
+        <p class="error" id="li-error" role="alert" hidden></p>
+      </form>
+
+      <form id="register-form" novalidate hidden>
+        <label for="rg-name">Full name</label>
+        <input id="rg-name" type="text" autocomplete="name" required />
+        <label for="rg-email">Email</label>
+        <input id="rg-email" type="email" autocomplete="email" required />
+        <label for="rg-pw">Password</label>
+        <input id="rg-pw" type="password" autocomplete="new-password" required />
+        <div class="meter"><i id="rg-meter"></i></div>
+        <p class="hint">At least 8 characters with a letter and a number.</p>
+        <label for="rg-pw2">Confirm password</label>
+        <input id="rg-pw2" type="password" autocomplete="new-password" required />
+        <label class="check"><input type="checkbox" data-show="register-form" /> Show passwords</label>
+        <button type="submit" class="primary wide">Create account</button>
+        <p class="error" id="rg-error" role="alert" hidden></p>
+      </form>
+      <button type="button" id="auth-back" class="link">Back to start</button>
+    </div>
+  </section>
+  <div id="pw-modal" class="modal" hidden>
+    <form id="pw-form" class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pw-title" novalidate>
+      <h2 id="pw-title">Change password</h2>
+      <label for="pw-cur">Current password</label>
+      <input id="pw-cur" type="password" autocomplete="current-password" required />
+      <label for="pw-new">New password</label>
+      <input id="pw-new" type="password" autocomplete="new-password" required />
+      <div class="meter"><i id="pw-meter"></i></div>
+      <label for="pw-new2">Confirm new password</label>
+      <input id="pw-new2" type="password" autocomplete="new-password" required />
+      <label class="check"><input type="checkbox" data-show="pw-form" /> Show passwords</label>
+      <div class="actions"><button type="submit" class="primary">Save password</button><button type="button" id="pw-cancel">Cancel</button></div>
+      <p class="error" id="pw-error" role="alert" hidden></p>
+      <p class="ok" id="pw-ok" role="status" hidden></p>
+    </form>
+  </div>
+  <div id="app" hidden>
+  <div class="progress" id="progress"></div>
+  <header class="hero">
+    <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i>
+    <div class="hero-inner">
+      <div>
+        <h1>ADVSTAT Workbench</h1>
+        <p>Type your data and watch the statistics draw themselves.</p>
+      </div>
+      <div class="hero-btns"><span id="who" class="who"></span><button id="pw-open" class="ghost" type="button">Change password</button><button id="logout" class="ghost" type="button">Log out</button><button id="home" class="ghost" type="button">Home</button><button id="theme" class="ghost" type="button" aria-label="Switch light and dark theme">Dark mode</button></div>
+    </div>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Analysis">
+    <button role="tab" id="tab-reg" aria-selected="true" aria-controls="panel-reg">Linear regression</button>
+    <button role="tab" id="tab-hyp" aria-selected="false" aria-controls="panel-hyp">Hypothesis testing</button>
+    <span class="ink" id="ink"></span>
+  </nav>
+
+  <main>
+    <!-- ============ REGRESSION ============ -->
+    <section id="panel-reg" role="tabpanel" aria-labelledby="tab-reg">
+      <div class="grid">
+        <form id="reg-form" class="card" novalidate>
+          <h2>Enter your data</h2>
+          <p class="hint">Results update as you type. Paste numbers separated by commas, spaces or new lines. X and Y need the same count.</p>
+          <label for="x-input">X values (independent)</label>
+          <textarea id="x-input" rows="3" placeholder="1, 2, 3, 4, 5"></textarea>
+          <label for="y-input">Y values (dependent)</label>
+          <textarea id="y-input" rows="3" placeholder="2, 4, 5, 4, 5"></textarea>
+          <label for="predict-x">Predict Y for an X value (optional)</label>
+          <input id="predict-x" type="number" step="any" placeholder="e.g. 6" />
+          <div class="actions">
+            <button type="submit" class="primary">Calculate</button>
+            <button type="button" id="reg-sample">Load sample data</button>
+            <button type="button" id="reg-clear">Clear</button>
+          </div>
+          <p id="reg-error" class="error" role="alert" hidden></p>
+        </form>
+
+        <div id="reg-out" class="out" hidden>
+          <div class="card equation">
+            <span class="label">Regression equation</span>
+            <div class="big" id="reg-eq"></div>
+            <p id="reg-predict" class="hint"></p>
+          </div>
+          <div class="stats">
+            <div class="card stat"><span class="label">Correlation r</span><b id="reg-r"></b></div>
+            <div class="card stat"><span class="label">R squared</span><b id="reg-r2"></b></div>
+            <div class="card stat"><span class="label">Strength</span><b id="reg-strength"></b><div class="meter"><i id="reg-meter"></i></div></div>
+          </div>
+          <div class="card">
+            <h2>Scatter diagram</h2>
+            <canvas id="reg-canvas" aria-label="Scatter diagram with regression line"></canvas>
+          </div>
+          <div class="card">
+            <h2>Interpretation</h2>
+            <p id="reg-interp"></p>
+          </div>
+          <div class="card">
+            <h2>Solution steps</h2>
+            <div class="scroll"><table id="reg-table"></table></div>
+            <div id="reg-steps" class="steps"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ HYPOTHESIS ============ -->
+    <section id="panel-hyp" role="tabpanel" aria-labelledby="tab-hyp" hidden>
+      <div class="grid">
+        <form id="hyp-form" class="card" novalidate>
+          <h2>State the test</h2>
+          <label for="h0">Null hypothesis (H₀)</label>
+          <input id="h0" type="text" placeholder="The mean score is 50 (μ = 50)" />
+          <label for="h1">Alternative hypothesis (H₁)</label>
+          <input id="h1" type="text" placeholder="The mean score is not 50 (μ ≠ 50)" />
+          <div class="row2">
+            <div>
+              <label for="tail">Type of test</label>
+              <select id="tail">
+                <option value="two">Two-tailed (≠)</option>
+                <option value="right">Right-tailed (&gt;)</option>
+                <option value="left">Left-tailed (&lt;)</option>
+              </select>
+            </div>
+            <div>
+              <label for="alpha">Level of significance (α)</label>
+              <select id="alpha">
+                <option value="0.10">0.10</option>
+                <option value="0.05" selected>0.05</option>
+                <option value="0.025">0.025</option>
+                <option value="0.01">0.01</option>
+                <option value="0.005">0.005</option>
+                <option value="0.001">0.001</option>
+                <option value="custom">Custom…</option>
+              </select>
+            </div>
+          </div>
+          <div id="alpha-custom-wrap" hidden>
+            <label for="alpha-custom">Custom α (between 0 and 1)</label>
+            <input id="alpha-custom" type="number" step="any" placeholder="0.02" />
+          </div>
+          <div class="row2">
+            <div><label for="mu0">Hypothesized mean (μ₀)</label><input id="mu0" type="number" step="any" /></div>
+            <div><label for="xbar">Sample mean (x̄)</label><input id="xbar" type="number" step="any" /></div>
+            <div><label for="sigma">Population std. dev. (σ)</label><input id="sigma" type="number" step="any" /></div>
+            <div><label for="n">Sample size (n)</label><input id="n" type="number" step="1" /></div>
+          </div>
+          <div class="actions">
+            <button type="submit" class="primary">Run test</button>
+            <button type="button" id="hyp-sample">Load sample data</button>
+            <button type="button" id="hyp-clear">Clear</button>
+          </div>
+          <p id="hyp-error" class="error" role="alert" hidden></p>
+        </form>
+
+        <div id="hyp-out" class="out" hidden>
+          <div id="hyp-decision" class="card decision"></div>
+          <div class="stats">
+            <div class="card stat"><span class="label">Computed Z</span><b id="hyp-z"></b></div>
+            <div class="card stat"><span class="label">Critical Z</span><b id="hyp-crit"></b></div>
+            <div class="card stat"><span class="label">p-value</span><b id="hyp-p"></b></div>
+          </div>
+          <div class="card">
+            <h2>Normal curve</h2>
+            <canvas id="hyp-canvas" aria-label="Standard normal curve with rejection regions shaded"></canvas>
+            <div class="legend">
+              <span><i class="sw acc"></i>Acceptance region</span>
+              <span><i class="sw rej"></i>Rejection region</span>
+              <span><i class="sw zline"></i>Computed Z</span>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Solution steps</h2>
+            <div id="hyp-steps" class="steps"></div>
+          </div>
+          <div class="card">
+            <h2>Z-table values</h2>
+            <p class="hint">Critical values for common α. Your chosen α is highlighted.</p>
+            <div class="scroll"><table id="z-table"></table></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer>Faith Colleges · College of Communication and Information Technology · ADVSTAT final output</footer>
+  <button id="top" class="ghost fab" type="button" aria-label="Back to top">Top</button>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
