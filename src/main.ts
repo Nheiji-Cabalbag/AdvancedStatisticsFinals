@@ -277,7 +277,7 @@ window.addEventListener("resize", moveInk); moveInk();
 const root = document.documentElement;
 try { const saved = localStorage.getItem("advstat-theme"); if (saved) root.dataset.theme = saved; } catch { /* storage unavailable */ }
 const themeBtn = $("theme");
-const syncTheme = () => (themeBtn.textContent = root.dataset.theme === "dark" ? "Light mode" : "Dark mode");
+const syncTheme = () => ($("theme-label").textContent = root.dataset.theme === "dark" ? "Light mode" : "Dark mode");
 syncTheme();
 themeBtn.addEventListener("click", () => {
   root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
@@ -332,7 +332,7 @@ $("start-btn").focus();
 const authEl = $("auth"), pwModal = $("pw-modal");
 let currentUser: User | null = null;
 
-function setWho() { $("who").textContent = currentUser ? `Hi, ${currentUser.name.split(" ")[0]}` : ""; }
+function setWho() { $("who").textContent = currentUser ? `Hi, ${currentUser.name.split(" ")[0]}` : ""; $("menu-user").textContent = currentUser ? `Signed in as ${currentUser.email}` : ""; }
 function fail(id: string, msg: string | null) { const el = $(id); el.hidden = msg === null; el.textContent = msg ?? ""; }
 async function busy(btn: HTMLButtonElement, work: () => Promise<void>) {
   btn.disabled = true; btn.style.opacity = ".7";
@@ -435,3 +435,17 @@ $("logout").addEventListener("click", async () => {
   $("reg-clear").click(); $("hyp-clear").click();
   goHome();
 });
+
+/* ================= Settings menu ================= */
+const sBtn = $("settings-btn"), sMenu = $("settings-menu");
+function setMenu(open: boolean) {
+  sMenu.hidden = !open; sBtn.setAttribute("aria-expanded", String(open));
+  if (open) sMenu.querySelector<HTMLElement>("button")?.focus();
+}
+sBtn.addEventListener("click", () => setMenu(Boolean(sMenu.hidden)));
+document.addEventListener("click", (e) => {
+  if (sMenu.hidden) return;
+  const t = e.target as HTMLElement;
+  if (!t.closest(".settings") || t.closest("#settings-menu button")) setMenu(false);
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !sMenu.hidden) { setMenu(false); sBtn.focus(); } });

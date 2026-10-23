@@ -1,11 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"] // rhel-... is the runtime Vercel uses
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled connection, used by the app
+  directUrl = env("DIRECT_URL")   // direct connection, used by prisma migrate
 }
 
 model User {
@@ -16,4 +17,11 @@ model User {
   tokenVersion Int      @default(0) // bumped on password change to sign out old sessions
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+// Serverless functions do not share memory, so rate limits live in the database.
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
 }

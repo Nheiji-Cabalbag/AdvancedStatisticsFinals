@@ -33,7 +33,7 @@ function tip(ctx: CanvasRenderingContext2D, w: number, x: number, y: number, lin
   const wd = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 20, ht = lines.length * 18 + 12;
   const tx = clamp(x - wd / 2, 4, w - wd - 4), ty = Math.max(4, y - ht - 14);
   const g = ctx.createLinearGradient(tx, ty, tx + wd, ty + ht);
-  g.addColorStop(0, "#4f46e5"); g.addColorStop(1, "#ec4899");
+  g.addColorStop(0, "#6674f0"); g.addColorStop(1, "#e879b9");
   ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(tx, ty, wd, ht, 10); ctx.fill();
   ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
   lines.forEach((l, i) => ctx.fillText(l, tx + 10, ty + 15 + i * 18));
@@ -76,7 +76,7 @@ export function drawScatter(canvas: HTMLCanvasElement, x: number[], y: number[],
     ctx.save();
     if (i === hover) { ctx.shadowColor = "#a855f7"; ctx.shadowBlur = 18; ctx.strokeStyle = "#ec4899"; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(pt.px, pt.py); ctx.lineTo(pt.px, sy(pt.fit)); ctx.stroke(); ctx.setLineDash([]); }
     const g = ctx.createRadialGradient(pt.px - 2, pt.py - 2, 1, pt.px, pt.py, r);
-    g.addColorStop(0, "#a5b4fc"); g.addColorStop(1, "#4f46e5");
+    g.addColorStop(0, "#c7d2fe"); g.addColorStop(1, "#6f7df5");
     ctx.fillStyle = g; ctx.strokeStyle = "#fff"; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(pt.px, pt.py, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.restore();

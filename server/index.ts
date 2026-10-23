@@ -1,3 +1,14 @@
+// Development only: runs the same api/*.ts handlers that Vercel runs in production.
+import "dotenv/config";
+import express from "express";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import register from "../api/register.js";
+import login from "../api/login.js";
+import logout from "../api/logout.js";
+import me from "../api/me.js";
+import changePassword from "../api/change-password.js";
+
+type H = (req: VercelRequest, res: VercelResponse) => Promise<unknown>;
 import express, { type NextFunction, type Request, type Response } from "express";
 import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs";
@@ -71,67 +82,10 @@ const wrap = (fn: Handler) => (req: Request, res: Response, next: NextFunction) 
 
 /* ---------- app ---------- */
 const app = express();
-if (PROD) app.set("trust proxy", 1);
 app.use(express.json({ limit: "10kb" }));
-app.use(cookieParser());
 
-app.post("/api/register", wrap(async (req, res) => {
-  if (tooMany(`reg:${req.ip}`)) return res.status(429).json({ error: "Too many attempts. Try again in a few minutes." });
-  const name = String(req.body?.name ?? "").trim();
-  const email = String(req.body?.email ?? "").trim().toLowerCase();
-  const password = req.body?.password;
-  if (name.length < 2 || name.length > 60) return res.status(400).json({ error: "Name must be 2 to 60 characters." });
-  if (!emailOk(email)) return res.status(400).json({ error: "Enter a valid email address." });
-  const problem = passwordProblem(password);
-  if (problem) return res.status(400).json({ error: problem });
-
-  if (await prisma.user.findUnique({ where: { email } })) return res.status(409).json({ error: "An account with this email already exists. Log in instead." });
-  const user = await prisma.user.create({ data: { name, email, passwordHash: await bcrypt.hash(password as string, BCRYPT_ROUNDS) } });
-  issueSession(res, user);
-  res.status(201).json({ user: publicUser(user) });
-}));
-
-
-app.post("/api/login", wrap(async (req, res) => {
-  if (tooMany(`login:${req.ip}`)) return res.status(429).json({ error: "Too many attempts. Try again in a few minutes." });
-  const email = String(req.body?.email ?? "").trim().toLowerCase();
-  const password = String(req.body?.password ?? "");
-  const user = await prisma.user.findUnique({ where: { email } });
-  const ok = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
-  if (!user || !ok) return res.status(401).json({ error: "Incorrect email or password." });
-  attempts.delete(`login:${req.ip}`);
-  issueSession(res, user);
-  res.json({ user: publicUser(user) });
-}));
-
-
-app.post("/api/logout", (_req, res) => {
-  res.clearCookie(COOKIE, { httpOnly: true, sameSite: "lax", secure: PROD });
-  res.json({ ok: true });
-});
-
-app.get("/api/me", requireAuth, (_req, res) => res.json({ user: publicUser(res.locals.user as User) }));
-
-app.post("/api/change-password", requireAuth, wrap(async (req, res) => {
-  const user = res.locals.user as User;
-  if (tooMany(`pw:${user.id}`)) return res.status(429).json({ error: "Too many attempts. Try again in a few minutes." });
-  const current = String(req.body?.currentPassword ?? "");
-  const next = req.body?.newPassword;
-  if (!(await bcrypt.compare(current, user.passwordHash))) return res.status(401).json({ error: "Current password is incorrect." });
-  const problem = passwordProblem(next);
-  if (problem) return res.status(400).json({ error: problem });
-  if (next === current) return res.status(400).json({ error: "New password must be different from the current one." });
-
-  const updated = await prisma.user.update({
-    where: { id: user.id },
-    data: { passwordHash: await bcrypt.hash(next as string, BCRYPT_ROUNDS), tokenVersion: { increment: 1 } },
-  });
-  attempts.delete(`pw:${user.id}`);
-  issueSession(res, updated); // this browser stays signed in; every other session is signed out
-  res.json({ ok: true });
-}));
-
-
+const mount = (method: "get" | "post", path: string, h: H) =>
+  app[method](path, (req, res) => { void h(req as unknown as VercelRequest, res as unknown as VercelResponse); });
 // Serve the built front end when running your own server (npm run build && npm start).
 // On Vercel the static files are served by Vercel itself, so skip this there.
 const dist = path.resolve(process.cwd(), "dist");
@@ -140,11 +94,14 @@ if (!ON_VERCEL && fs.existsSync(dist)) {
   app.get("*", (_req, res) => res.sendFile(path.join(dist, "index.html")));
 }
 
-app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err);
-  res.status(500).json({ error: "Something went wrong on the server." });
-});
+mount("post", "/api/register", register);
+mount("post", "/api/login", login);
+mount("post", "/api/logout", logout);
+mount("get", "/api/me", me);
+mount("post", "/api/change-password", changePassword);
 
+const port = Number(process.env.PORT ?? 3001);
+app.listen(port, () => console.log(`API ready on http://localhost:${port}`));
 // Only start a listening server locally. On Vercel the exported app is used as the function.
 if (!ON_VERCEL) {
   app.listen(PORT, () => console.log(`API ready on http://localhost:${PORT}`));
