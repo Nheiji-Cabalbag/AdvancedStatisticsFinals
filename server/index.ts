@@ -8,6 +8,7 @@ import path from "node:path";
 
 const prisma = new PrismaClient();
 const PROD = process.env.NODE_ENV === "production";
+const ON_VERCEL = Boolean(process.env.VERCEL);
 const PORT = Number(process.env.PORT ?? 3001);
 
 let SECRET = process.env.JWT_SECRET;
@@ -40,6 +41,7 @@ function passwordProblem(pw: unknown): string | null {
 const emailOk = (e: string) => e.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
 // Simple in-memory rate limit: 10 attempts per 15 minutes per IP and action.
+// Note: on Vercel each serverless instance keeps its own counter, so this is best-effort only.
 const attempts = new Map<string, { n: number; reset: number }>();
 function tooMany(key: string): boolean {
   const now = Date.now();
@@ -130,9 +132,10 @@ app.post("/api/change-password", requireAuth, wrap(async (req, res) => {
 }));
 
 
-// Serve the built front end in production (npm run build && npm start).
+// Serve the built front end when running your own server (npm run build && npm start).
+// On Vercel the static files are served by Vercel itself, so skip this there.
 const dist = path.resolve(process.cwd(), "dist");
-if (fs.existsSync(dist)) {
+if (!ON_VERCEL && fs.existsSync(dist)) {
   app.use(express.static(dist));
   app.get("*", (_req, res) => res.sendFile(path.join(dist, "index.html")));
 }
@@ -142,4 +145,9 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: "Something went wrong on the server." });
 });
 
-app.listen(PORT, () => console.log(`API ready on http://localhost:${PORT}`));
+// Only start a listening server locally. On Vercel the exported app is used as the function.
+if (!ON_VERCEL) {
+  app.listen(PORT, () => console.log(`API ready on http://localhost:${PORT}`));
+}
+
+export default app;
