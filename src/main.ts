@@ -41,10 +41,22 @@ $("reg-form").addEventListener("submit", (e) => {
   }
 });
 
+const rnd = (min: number, max: number) => Math.random() * (max - min) + min;
+const rint = (min: number, max: number) => Math.floor(rnd(min, max + 1));
+const pick = <T,>(items: T[]): T => items[rint(0, items.length - 1)];
+
 $("reg-sample").addEventListener("click", () => {
-  $<HTMLTextAreaElement>("x-input").value = "2, 3, 5, 7, 9, 10, 12, 14";
-  $<HTMLTextAreaElement>("y-input").value = "65, 70, 74, 80, 85, 88, 93, 98";
-  $<HTMLInputElement>("predict-x").value = "11";
+  const n = rint(8, 14);
+  const xs = new Set<number>();
+  while (xs.size < n) xs.add(rint(1, 40));
+  const x = [...xs].sort((p, q) => p - q);
+  const slope = rnd(1.5, 6) * (Math.random() < 0.8 ? 1 : -1);
+  const base = rint(20, 80);
+  const noise = rnd(2, 25); // bigger noise gives a weaker relationship
+  const y = x.map((v) => Math.round(base + slope * v + rnd(-noise, noise)));
+  $<HTMLTextAreaElement>("x-input").value = x.join(", ");
+  $<HTMLTextAreaElement>("y-input").value = y.join(", ");
+  $<HTMLInputElement>("predict-x").value = String(rint(Math.min(...x), Math.max(...x)));
 });
 $("reg-clear").addEventListener("click", () => {
   ["x-input", "y-input", "predict-x"].forEach((id) => ($<HTMLInputElement>(id).value = ""));
@@ -109,12 +121,16 @@ $("hyp-form").addEventListener("submit", (e) => {
 });
 
 $("hyp-sample").addEventListener("click", () => {
-  $<HTMLInputElement>("h0").value = "The average battery life is 50 hours (μ = 50)";
-  $<HTMLInputElement>("h1").value = "The average battery life is not 50 hours (μ ≠ 50)";
-  $<HTMLSelectElement>("tail").value = "two";
-  alphaSel.value = "0.05"; $("alpha-custom-wrap").hidden = true;
-  $<HTMLInputElement>("mu0").value = "50"; $<HTMLInputElement>("xbar").value = "52";
-  $<HTMLInputElement>("sigma").value = "5"; $<HTMLInputElement>("n").value = "36";
+  const mu0 = rint(40, 120), sigma = rint(5, 20), n = rint(25, 100);
+  const tail = pick<Tail>(["two", "left", "right"]);
+  const xbar = +(mu0 + rnd(-3, 3) * (sigma / Math.sqrt(n))).toFixed(2); // Z lands between about -3 and 3
+  const sign = { two: ["=", "≠"], left: ["=", "<"], right: ["=", ">"] }[tail];
+  $<HTMLInputElement>("h0").value = `The mean is ${mu0} (μ ${sign[0]} ${mu0})`;
+  $<HTMLInputElement>("h1").value = `The mean is ${tail === "two" ? "not " : tail === "left" ? "less than " : "greater than "}${mu0} (μ ${sign[1]} ${mu0})`;
+  $<HTMLSelectElement>("tail").value = tail;
+  alphaSel.value = pick(["0.10", "0.05", "0.05", "0.025", "0.01"]); $("alpha-custom-wrap").hidden = true;
+  $<HTMLInputElement>("mu0").value = String(mu0); $<HTMLInputElement>("xbar").value = String(xbar);
+  $<HTMLInputElement>("sigma").value = String(sigma); $<HTMLInputElement>("n").value = String(n);
 });
 $("hyp-clear").addEventListener("click", () => {
   ["h0", "h1", "mu0", "xbar", "sigma", "n", "alpha-custom"].forEach((id) => ($<HTMLInputElement>(id).value = ""));
@@ -261,7 +277,7 @@ window.addEventListener("resize", moveInk); moveInk();
 const root = document.documentElement;
 try { const saved = localStorage.getItem("advstat-theme"); if (saved) root.dataset.theme = saved; } catch { /* storage unavailable */ }
 const themeBtn = $("theme");
-const syncTheme = () => (themeBtn.textContent = root.dataset.theme === "dark" ? "Light mode" : "Dark mode");
+const syncTheme = () => ($("theme-label").textContent = root.dataset.theme === "dark" ? "Light mode" : "Dark mode");
 syncTheme();
 themeBtn.addEventListener("click", () => {
   root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
@@ -316,7 +332,7 @@ $("start-btn").focus();
 const authEl = $("auth"), pwModal = $("pw-modal");
 let currentUser: User | null = null;
 
-function setWho() { $("who").textContent = currentUser ? `Hi, ${currentUser.name.split(" ")[0]}` : ""; }
+function setWho() { $("who").textContent = currentUser ? `Hi, ${currentUser.name.split(" ")[0]}` : ""; $("menu-user").textContent = currentUser ? `Signed in as ${currentUser.email}` : ""; }
 function fail(id: string, msg: string | null) { const el = $(id); el.hidden = msg === null; el.textContent = msg ?? ""; }
 async function busy(btn: HTMLButtonElement, work: () => Promise<void>) {
   btn.disabled = true; btn.style.opacity = ".7";
@@ -419,3 +435,17 @@ $("logout").addEventListener("click", async () => {
   $("reg-clear").click(); $("hyp-clear").click();
   goHome();
 });
+
+/* ================= Settings menu ================= */
+const sBtn = $("settings-btn"), sMenu = $("settings-menu");
+function setMenu(open: boolean) {
+  sMenu.hidden = !open; sBtn.setAttribute("aria-expanded", String(open));
+  if (open) sMenu.querySelector<HTMLElement>("button")?.focus();
+}
+sBtn.addEventListener("click", () => setMenu(Boolean(sMenu.hidden)));
+document.addEventListener("click", (e) => {
+  if (sMenu.hidden) return;
+  const t = e.target as HTMLElement;
+  if (!t.closest(".settings") || t.closest("#settings-menu button")) setMenu(false);
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !sMenu.hidden) { setMenu(false); sBtn.focus(); } });
